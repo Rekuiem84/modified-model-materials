@@ -20,7 +20,6 @@ const scene = new THREE.Scene();
  */
 const textureLoader = new THREE.TextureLoader();
 const gltfLoader = new GLTFLoader();
-const cubeTextureLoader = new THREE.CubeTextureLoader();
 
 /**
  * Update all materials
@@ -64,7 +63,46 @@ const customUniforms = {
 	uTime: { value: 0 },
 };
 
+// Material modifications
 material.onBeforeCompile = (shader) => {
+	shader.uniforms.uTime = customUniforms.uTime;
+
+	shader.vertexShader = shader.vertexShader.replace(
+		"#include <common>",
+		`
+            #include <common>
+
+            uniform float uTime;
+
+            mat2 get2dRotateMatrix(float _angle){
+                return mat2(cos(_angle), - sin(_angle), sin(_angle), cos(_angle));
+            }
+        `,
+	);
+	shader.vertexShader = shader.vertexShader.replace(
+		"#include <beginnormal_vertex>",
+		`
+        #include <beginnormal_vertex>
+
+        float angle = (sin(position.y + uTime)) * 0.5;
+        mat2 rotateMatrix = get2dRotateMatrix(angle);
+
+        objectNormal.xz = rotateMatrix * objectNormal.xz;
+        `,
+	);
+
+	shader.vertexShader = shader.vertexShader.replace(
+		"#include <begin_vertex>",
+		`
+        #include <begin_vertex>
+
+        transformed.xz = rotateMatrix * transformed.xz;
+        `,
+	);
+};
+
+// Depth material modifications (for shadows)
+depthMaterial.onBeforeCompile = (shader) => {
 	shader.uniforms.uTime = customUniforms.uTime;
 	shader.vertexShader = shader.vertexShader.replace(
 		"#include <common>",
@@ -82,52 +120,11 @@ material.onBeforeCompile = (shader) => {
 		"#include <begin_vertex>",
 		`
         #include <begin_vertex>
-
-        float angle = sin(position.y + uTime) * 0.5;
-
-        mat2 rotateMatrix = get2dRotateMatrix(angle);
-
-        transformed.xz = rotateMatrix * transformed.xz;
-        `,
-	);
-};
-
-depthMaterial.onBeforeCompile = (shader) => {
-	console.log(shader.vertexShader);
-
-	shader.uniforms.uTime = customUniforms.uTime;
-	shader.vertexShader = shader.vertexShader.replace(
-		"#include <common>",
-		`
-        #include <common>
-        
-        uniform float uTime;
-        
-        mat2 get2dRotateMatrix(float _angle){
-            return mat2(cos(_angle), - sin(_angle), sin(_angle), cos(_angle));
-            }
-            `,
-	);
-	shader.vertexShader = shader.vertexShader.replace(
-		"#include <beginnormal_vertex>",
-		`
-        #include <beginnormal_vertex>
-        
-        float angle = sin(position.y + uTime) * 0.5;
-        mat2 rotateMatrix = get2dRotateMatrix(angle);
-        objectNormal.xz = rotateMatrix * objectNormal.xz;
-        `,
-	);
-	shader.vertexShader = shader.vertexShader.replace(
-		"#include <begin_vertex>",
-		`
-        #include <begin_vertex>
         float angle = sin(position.y + uTime) * 0.5;
         mat2 rotateMatrix = get2dRotateMatrix(angle);
         transformed.xz = rotateMatrix * transformed.xz;
         `,
 	);
-	console.log(shader.vertexShader);
 };
 
 /**
@@ -151,13 +148,15 @@ const planeGeometry = new THREE.PlaneGeometry(16, 16);
 
 const ground = new THREE.Mesh(planeGeometry, planeMaterial);
 ground.castShadow = false;
-ground.receiveShadow = false;
+ground.material.side = THREE.DoubleSide;
 
 const wallLeft = new THREE.Mesh(planeGeometry, planeMaterial);
 wallLeft.castShadow = false;
+wallLeft.material.side = THREE.DoubleSide;
 
 const wallRight = new THREE.Mesh(planeGeometry, planeMaterial);
 wallRight.castShadow = false;
+wallRight.material.side = THREE.DoubleSide;
 
 ground.rotation.x = -Math.PI * 0.5;
 ground.position.y = -5;
@@ -181,26 +180,26 @@ directionalLight.castShadow = true;
 directionalLight.shadow.mapSize.set(1024, 1024);
 directionalLight.shadow.camera.far = 30;
 directionalLight.shadow.normalBias = 0.05;
-directionalLight.position.set(0.25, 2, -2.25);
+directionalLight.position.set(1, 0.65, -2.3);
 scene.add(directionalLight);
 
 // GUI controls for light
 gui
 	.add(directionalLight.position, "x")
-	.min(-10)
+	.min(-1)
 	.max(10)
 	.step(0.01)
 	.name("Light X");
 gui
 	.add(directionalLight.position, "y")
-	.min(-10)
-	.max(10)
+	.min(-1.5)
+	.max(5)
 	.step(0.01)
 	.name("Light Y");
 gui
 	.add(directionalLight.position, "z")
 	.min(-10)
-	.max(10)
+	.max(1)
 	.step(0.01)
 	.name("Light Z");
 gui
