@@ -130,7 +130,7 @@ depthMaterial.onBeforeCompile = (shader) => {
 /**
  * Models
  */
-gltfLoader.load("/models/LeePerrySmith/LeePerrySmith.glb", (gltf) => {
+gltfLoader.load("./models/LeePerrySmith/LeePerrySmith.glb", (gltf) => {
 	// Model
 	const mesh = gltf.scene.children[0];
 	mesh.rotation.y = Math.PI * 0.5;
