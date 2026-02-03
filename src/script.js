@@ -45,9 +45,9 @@ scene.background = new THREE.Color(0x222222);
  */
 
 // Textures
-const mapTexture = textureLoader.load("/models/LeePerrySmith/color.jpg");
+const mapTexture = textureLoader.load("./models/LeePerrySmith/color.jpg");
 mapTexture.colorSpace = THREE.SRGBColorSpace;
-const normalTexture = textureLoader.load("/models/LeePerrySmith/normal.jpg");
+const normalTexture = textureLoader.load("./models/LeePerrySmith/normal.jpg");
 
 // Material
 const material = new THREE.MeshStandardMaterial({
